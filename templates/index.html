@@ -540,7 +540,9 @@
 
     async function saveSingleAccount() {
       const name = document.getElementById('inputName').value.trim();
-      const secret = document.getElementById('inputSecret').value.trim();
+      let rawSecret = document.getElementById('inputSecret').value;
+      // Otomatis hilangkan semua jenis spasi dan jadikan uppercase
+      const secret = rawSecret.replace(/\s+/g, '').toUpperCase().trim();
       if (!name || !secret) {
         return alert('Nama akun dan Secret Key wajib diisi!');
       }
@@ -599,7 +601,8 @@
     async function saveEditAccount() {
       const id = document.getElementById('editId').value;
       const name = document.getElementById('editName').value.trim();
-      const secret = document.getElementById('editSecret').value.trim();
+      let rawSecret = document.getElementById('editSecret').value;
+      const secret = rawSecret.replace(/\s+/g, '').toUpperCase().trim();
 
       try {
         const res = await fetch(`/api/accounts/${id}`, {
@@ -633,7 +636,8 @@
     let quickTimeout = null;
     async function onQuickInput(val) {
       clearTimeout(quickTimeout);
-      const clean = val.replace(/[^A-Za-z2-7]/g, '');
+      // Hapus semua spasi dan karakter non-base32
+      const clean = val.replace(/\s+/g, '').replace(/[^A-Za-z2-7]/g, '').toUpperCase();
       if (clean.length < 8) {
         document.getElementById('quickCode').textContent = '------';
         document.getElementById('quickHint').textContent = 'Masukkan minimal 8 karakter secret key';
@@ -645,11 +649,11 @@
           const data = await res.json();
           const c = data.code || '------';
           document.getElementById('quickCode').textContent = c.length === 6 ? `${c.slice(0, 3)} ${c.slice(3)}` : c;
-          document.getElementById('quickHint').textContent = '✅ Kode aktif (Klik kotak untuk salin)';
+          document.getElementById('quickHint').textContent = `✅ ${clean.length} Karakter aktif (Klik untuk salin)`;
         } catch (e) {
           document.getElementById('quickCode').textContent = 'ERROR';
         }
-      }, 200);
+      }, 150);
     }
 
     function copyQuickCode() {

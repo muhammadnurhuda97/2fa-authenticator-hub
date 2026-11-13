@@ -64,8 +64,9 @@ app.add_middleware(
 def clean_secret(secret: str) -> str:
     if not secret:
         return ""
-    # Remove spaces, dashes, and invalid chars
-    cleaned = re.sub(r"[^A-Za-z2-7]", "", secret.strip()).upper()
+    # Hapus semua jenis spasi (spasi biasa, tab, newline, nbsp) dan karakter non-base32
+    cleaned = re.sub(r"\s+", "", secret.strip())
+    cleaned = re.sub(r"[^A-Za-z2-7]", "", cleaned).upper()
     return cleaned
 
 
@@ -223,7 +224,7 @@ async def import_batch(req: BatchImportReq, _: bool = Depends(verify_credentials
     keys = load_keys()
     added = 0
     for line in lines:
-        # Try delimiter: ----, |, /, tab, comma, space
+        # Prioritas delimiter umum: ----, |, /, tab, comma
         parts = []
         if "----" in line:
             parts = [p.strip() for p in line.split("----") if p.strip()]
@@ -233,16 +234,15 @@ async def import_batch(req: BatchImportReq, _: bool = Depends(verify_credentials
             parts = [p.strip() for p in line.split("\t") if p.strip()]
         elif "," in line:
             parts = [p.strip() for p in line.split(",") if p.strip()]
-        else:
-            parts = [p.strip() for p in line.split() if p.strip()]
+        elif "/" in line and not line.startswith("http"):
+            parts = [p.strip() for p in line.split("/") if p.strip()]
 
-        if not parts:
-            continue
+        secret = ""
+        name = ""
 
         if len(parts) >= 2:
             name = parts[0]
-            # find which part looks like secret key
-            secret = ""
+            # cari token yang merupakan secret key (panjang >= 8 karakter Base32)
             for p in parts[1:]:
                 c = clean_secret(p)
                 if len(c) >= 16:
@@ -251,8 +251,20 @@ async def import_batch(req: BatchImportReq, _: bool = Depends(verify_credentials
             if not secret:
                 secret = clean_secret(parts[1])
         else:
-            secret = clean_secret(parts[0])
-            name = f"2FA_{len(keys) + added + 1}"
+            # Jika tidak ada delimiter khusus, cek apakah seluruh baris adalah secret key (bisa berisi spasi seperti: hwts sebm ls3s...)
+            clean_whole_line = clean_secret(line)
+            if len(clean_whole_line) >= 16:
+                secret = clean_whole_line
+                name = f"2FA_{len(keys) + added + 1}"
+            else:
+                # jika baris campuran teks dan secret
+                tokens = line.split()
+                if len(tokens) >= 2:
+                    name = tokens[0]
+                    secret = clean_secret("".join(tokens[1:]))
+                else:
+                    secret = clean_whole_line
+                    name = f"2FA_{len(keys) + added + 1}"
 
         if secret and len(secret) >= 8:
             acc_id = str(uuid.uuid4())[:8]
