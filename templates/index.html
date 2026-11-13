@@ -361,7 +361,8 @@
         </div>
         <div class="form-group">
           <label>Secret Key 2FA (Base32)</label>
-          <input type="text" id="inputSecret" placeholder="Contoh: JBSWY3DPEHPK3PXP" />
+          <input type="text" id="inputSecret" placeholder="Contoh: hwts sebm ls3s la4v k3ng d66d 5xr5 trij" oninput="previewCleanKey(this.value, 'singleCleanHint')" />
+          <div id="singleCleanHint" style="display:none; font-family:'JetBrains Mono',Consolas,monospace; font-size:11.5px; color:#a78bfa; margin-top:2px;"></div>
         </div>
         <button class="btn-success" onclick="saveSingleAccount()">💾 Simpan Akun</button>
       </div>
@@ -385,7 +386,14 @@
         </a>
       </div>
       <div class="quick-box">
-        <input type="text" id="quickSecret" placeholder="Tempel Secret Key di sini untuk cek langsung..." oninput="onQuickInput(this.value)" />
+        <input type="text" id="quickSecret" placeholder="Tempel Secret Key di sini (cth: hwts sebm ls3s...)" oninput="onQuickInput(this.value)" />
+        <div id="quickCleanedBox" style="display:none; background:#111827; border:1px solid #1f2937; border-radius:8px; padding:8px 12px; font-family:'JetBrains Mono',Consolas,monospace; font-size:12px; color:#cbd5e1; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="color:var(--muted); font-size:11px;">CLEANED KEY: </span>
+            <span id="quickCleanedText" style="color:#a78bfa; font-weight:700;"></span>
+          </div>
+          <button class="btn-secondary btn-sm" onclick="copyCleanedKey()" title="Salin key bersih tanpa spasi" style="padding:2px 8px; font-size:11px;">📋 Salin Key</button>
+        </div>
         <div class="quick-result" onclick="copyQuickCode()" title="Klik untuk salin kode OTP cepat">
           <div style="font-size:12px; color:var(--muted);">KODE 2FA REAL-TIME (KLIK UNTUK SALIN):</div>
           <div class="quick-digits" id="quickCode">------</div>
@@ -426,7 +434,8 @@
       </div>
       <div class="form-group">
         <label>Secret Key 2FA</label>
-        <input type="text" id="editSecret" />
+        <input type="text" id="editSecret" oninput="previewCleanKey(this.value, 'editCleanHint')" />
+        <div id="editCleanHint" style="display:none; font-family:'JetBrains Mono',Consolas,monospace; font-size:11.5px; color:#a78bfa; margin-top:2px;"></div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
         <button class="btn-secondary" onclick="closeEditModal()">Batal</button>
@@ -633,11 +642,36 @@
       }
     }
 
+    function previewCleanKey(val, elementId) {
+      const clean = val.replace(/\s+/g, '').replace(/[^A-Za-z2-7]/g, '').toUpperCase();
+      const el = document.getElementById(elementId);
+      if (clean && clean !== val.trim()) {
+        el.style.display = 'block';
+        el.textContent = `Cleaned: ${clean}`;
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    function copyCleanedKey() {
+      const txt = document.getElementById('quickCleanedText').textContent;
+      if (txt) copyText(txt, 'Secret Key Bersih');
+    }
+
     let quickTimeout = null;
     async function onQuickInput(val) {
       clearTimeout(quickTimeout);
-      // Hapus semua spasi dan karakter non-base32
       const clean = val.replace(/\s+/g, '').replace(/[^A-Za-z2-7]/g, '').toUpperCase();
+      const box = document.getElementById('quickCleanedBox');
+      const textEl = document.getElementById('quickCleanedText');
+
+      if (clean) {
+        textEl.textContent = clean;
+        box.style.display = 'flex';
+      } else {
+        box.style.display = 'none';
+      }
+
       if (clean.length < 8) {
         document.getElementById('quickCode').textContent = '------';
         document.getElementById('quickHint').textContent = 'Masukkan minimal 8 karakter secret key';
@@ -653,7 +687,7 @@
         } catch (e) {
           document.getElementById('quickCode').textContent = 'ERROR';
         }
-      }, 150);
+      }, 100);
     }
 
     function copyQuickCode() {
