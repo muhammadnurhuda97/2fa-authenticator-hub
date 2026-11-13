@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.env
+venv/
+env/
+
+# Sensitive data
+keys.json
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

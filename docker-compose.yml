@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  authenticator-2fa:
+    build: .
+    container_name: 2fa_authenticator_hub
+    restart: unless-stopped
+    ports:
+      - "8799:8799"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8799
+      # Opsional: Aktifkan proteksi password jika dibuka ke internet publik
+      # - AUTH_USER=admin
+      # - AUTH_PASS=passwordrahasiamu123
+    volumes:
+      - ./keys.json:/app/keys.json

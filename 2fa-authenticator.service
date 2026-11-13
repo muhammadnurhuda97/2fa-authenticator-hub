@@ -1,0 +1,18 @@
+[Unit]
+Description=2FA Authenticator Hub Web Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/2fa_authenticator
+ExecStart=/usr/bin/python3 /var/www/2fa_authenticator/server.py
+Restart=always
+RestartSec=5
+Environment=HOST=0.0.0.0
+Environment=PORT=8799
+# Environment=AUTH_USER=admin
+# Environment=AUTH_PASS=password123
+
+[Install]
+WantedBy=multi-user.target
